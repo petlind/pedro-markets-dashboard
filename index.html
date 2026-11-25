@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Global Markets Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600;800&family=Red+Hat+Text:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a newspaper graphics desk on a heavy day — finding first, figures second, then what it means.
+   IDEA: a weather map of risk — cool cells for gains, hot cells for losses, one scale across every asset.
+   PICTURE: a full-width "storm track" of index moves from Seoul to New York, colour-scaled bars.
+   COLOUR and TYPE: navy ground in both themes; aqua gains, red-orange losses, yellow for neutral notes; Red Hat Display 800 + Red Hat Text.
+   LAYOUT: headline + tiles, the storm track, then rates/commodities, earnings, macro, news, geopolitics, calendar, sources. */
+:root{color-scheme:dark;--bg:#0b1433;--panel:#111c44;--line:#24305e;--ink:#eef1fb;--mute:#a6aed0;--up:#4fc1c6;--dn:#e8452c;--warm:#f7e463;--blue:#6f82f0}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Red Hat Text",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Red Hat Display",system-ui,sans-serif;margin:0;text-wrap:balance}
+h1{font-weight:800;font-size:clamp(30px,4.4vw,50px);line-height:1.05;max-width:22ch}
+h2{font-weight:800;font-size:clamp(22px,2.4vw,28px);line-height:1.1;margin-bottom:6px}
+h3{font-weight:600;font-size:17px;margin-bottom:8px}
+.band{padding:clamp(24px,3.5vw,52px) max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+.lede{color:var(--mute);max-width:70ch;margin:12px 0 0}
+.stamp{font-size:13px;color:var(--mute);margin-bottom:10px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:22px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tile .k{font-size:13px;color:var(--mute)}
+.tile .v{font-family:"Red Hat Display";font-weight:800;font-size:clamp(20px,2.2vw,26px);white-space:nowrap}
+.tile .c{font-size:14px;font-weight:600;white-space:nowrap}
+.up{color:var(--up)}.dn{color:var(--dn)}.flat{color:var(--mute)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.note{font-size:13px;color:var(--mute);margin-top:8px}
+/* storm track */
+.track{display:grid;gap:4px;margin-top:14px}
+.row{display:grid;grid-template-columns:150px 1fr 74px;align-items:center;gap:10px;font-size:14px}
+.row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .nm small{color:var(--mute);margin-left:4px}
+.bar{position:relative;height:22px;background:linear-gradient(90deg,transparent calc(50% - 1px),var(--line) calc(50% - 1px),var(--line) calc(50% + 1px),transparent calc(50% + 1px))}
+.bar i{position:absolute;top:3px;height:16px;border-radius:4px}
+.row .pc{text-align:right;font-weight:600;white-space:nowrap}
+.row:hover .nm{color:var(--warm)}
+.reg{font-size:13px;color:var(--warm);margin:10px 0 2px;font-weight:600}
+/* charts */
+.fig{position:relative;min-height:260px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.tip{position:absolute;pointer-events:none;background:#fff;color:#0b1433;font-size:13px;padding:6px 9px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .12s;z-index:2}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mute);font-weight:500;font-size:13px}
+td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.hb{display:grid;grid-template-columns:130px 1fr 60px;gap:10px;align-items:center;font-size:14px;margin:6px 0}
+.hb .t{height:18px;background:#0b1433;border-radius:4px;position:relative}
+.hb .t i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.hb .t b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--warm)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--mute);margin:4px 0 8px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:var(--c)}
+.news{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+.item{border-left:3px solid var(--c,var(--blue));padding:2px 0 2px 12px}
+.item h3{margin-bottom:4px}.item p{margin:0;color:var(--mute);font-size:15px}
+.cal li{margin:6px 0}.cal b{display:inline-block;min-width:92px;color:var(--warm);font-weight:600}
+.take li{margin:8px 0}
+.src{font-size:13px;color:var(--mute)}.src a{color:var(--ink)}
+a{color:var(--up)}
+.scroll{overflow-x:auto}
+@media(max-width:600px){.row{grid-template-columns:96px 1fr 58px;font-size:13px}.row .nm small{display:none}.hb{grid-template-columns:96px 1fr 52px}
+table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--mute)}.stack td:empty{display:none}}
+@media(prefers-reduced-motion:no-preference){.bar i{animation:grow .7s ease-out both}@keyframes grow{from{transform:scaleX(0)}}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+
+<header class="band"><div class="wrap">
+  <div class="stamp">Global market dashboard · Wednesday 25 November 2026 · US close (US markets shut Thu for Thanksgiving, early close Fri)</div>
+  <h1>AI rout crushes Asian chips; Wall Street claws back as hot inflation locks in a December Fed hike</h1>
+  <p class="lede">The Nasdaq fell as much as 4.6% and the Dow 1,100 points before dip-buyers stepped in. Seoul and Taipei took the full hit, Europe’s chipmakers followed, and core PCE at a two-year high left traders treating a Fed hike on 9 December as a near-certainty. Bonds rallied as a haven; gold kept falling.</p>
+  <div class="tiles" id="tiles"></div>
+</div></header>
+
+<section class="band" style="padding-top:0"><div class="wrap card">
+  <h2>Equities: the storm track, Asia → Europe → US</h2>
+  <div class="legend"><span style="--c:var(--up)">Gain</span><span style="--c:var(--dn)">Loss</span><span style="--c:transparent">Scale ±6.5%, centre line = unchanged</span></div>
+  <div class="track" id="track"></div>
+  <p class="note">US figures are Reuters closing levels; Nasdaq level derived from its −0.52% move. Nikkei and Hang Seng per AP/Armenpress closes; Taiex per Al Jazeera.</p>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap grid2">
+  <div class="card">
+    <h2>Bonds rally as a haven</h2>
+    <p class="note" style="margin-top:0">US 10-year Treasury yield, % — closes on selected days, late Oct to today</p>
+    <div class="fig" id="ust"><svg></svg><div class="tip"></div></div>
+    <table style="margin-top:10px"><thead><tr><th>Yield</th><th style="text-align:right">Level</th><th style="text-align:right">Day</th></tr></thead><tbody id="bonds"></tbody></table>
+  </div>
+  <div class="card">
+    <h2>Oil eases, metals slide</h2>
+    <p class="note" style="margin-top:0">Brent crude front-month, $/bbl — last seven sessions</p>
+    <div class="fig" id="brent"><svg></svg><div class="tip"></div></div>
+    <table style="margin-top:10px"><thead><tr><th>Asset</th><th style="text-align:right">Level</th><th style="text-align:right">Move</th></tr></thead><tbody id="cmd"></tbody></table>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap grid2">
+  <div class="card">
+    <h2>Earnings are still booming — Europe narrows the gap</h2>
+    <p class="note" style="margin-top:0">Year-on-year earnings growth, latest blended/estimated quarter, %</p>
+    <div id="eps"></div>
+    <p class="note">US: FactSet, Q3 2026, 93% of S&amp;P 500 reported. Europe: LSEG I/B/E/S, Q3 2026 (results + estimates); ex-energy figure is LSEG’s earlier estimate. Japan: TOPIX net profit, Apr–Jun quarter (JPMorgan/Bloomberg). No comparable fresh aggregate found for China/EM.</p>
+  </div>
+  <div class="card">
+    <h2>Inflation runs hot almost everywhere but China</h2>
+    <p class="note" style="margin-top:0">Latest headline inflation vs policy rate, %</p>
+    <div class="legend"><span style="--c:var(--dn)">Headline inflation (y/y)</span><span style="--c:var(--blue)">Policy rate</span></div>
+    <div class="fig" id="infl" style="min-height:280px"><svg></svg><div class="tip"></div></div>
+    <p class="note">US = PCE (Oct); policy rate = top of Fed range. Euro area HICP (Oct) vs ECB deposit rate. China CPI (Oct); China policy rate not shown.</p>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap card">
+  <h2>Macro scoreboard</h2>
+  <p class="note" style="margin-top:0">Growth still solid in the US, Germany and the UK; France and China’s factories in contraction; Japan stalled</p>
+  <div class="grid2" style="margin-top:8px">
+    <div><h3>November flash composite PMIs (50 = no change)</h3><div id="pmi"></div></div>
+    <div class="scroll"><table class="stack"><thead><tr><th>Economy</th><th>GDP</th><th>Inflation</th><th>Policy</th></tr></thead><tbody id="macro"></tbody></table></div>
+  </div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap card">
+  <h2>What moved markets</h2>
+  <div class="news" id="news" style="margin-top:12px"></div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap grid2">
+  <div class="card">
+    <h2>Geopolitical risk map</h2>
+    <div class="news" id="geo" style="grid-template-columns:1fr;margin-top:12px"></div>
+  </div>
+  <div class="card">
+    <h2>Week-ahead and December calendar</h2>
+    <ul class="cal" id="cal" style="padding-left:18px"></ul>
+    <h2 style="margin-top:20px">Strategist’s read</h2>
+    <ul class="take" style="padding-left:18px">
+      <li><b>Rates beat earnings this month.</b> Profits are growing 25–33% in the US and Europe, yet the S&amp;P 500 is set for its worst November since 2008 — a valuation and rate-path story, not a profits story.</li>
+      <li><b>The AI trade is now a governance and financing question.</b> The Nvidia leadership saga, debt-funded capex worries and chip-export politics hit the most concentrated markets (Korea, Taiwan, Nasdaq-100) hardest.</li>
+      <li><b>Rotation is the tell.</b> The Dow sits above 50,000 while the Nasdaq-100 flirts with a bear market; value, health care and Indian equities are where money has been hiding.</li>
+      <li><b>Watch the 9 December Fed decision and Hormuz headlines.</b> A 50 bp hike or a shipping escalation are the two clearest near-term downside catalysts; a deal on the Strait would be the biggest upside surprise for oil, inflation and bonds.</li>
+    </ul>
+    <p class="note">Observations for discussion, not investment advice.</p>
+  </div>
+</div></section>
+
+<footer class="band" style="padding-top:0"><div class="wrap src">
+  <h3>Sources</h3>
+  <p>Reuters (via MarketScreener, Investing.com, US News, Korea Times), Yahoo Finance, CNBC, AP, Al Jazeera, Fox Business, FactSet Earnings Insight, LSEG I/B/E/S (via Reuters), S&amp;P Global flash PMIs, Eurostat, ONS, Bank of England, ECB, Bank of Japan, NBS China, BEA, Trading Economics, Fastmarkets, Newsquawk, Euronews, CFR. Data gathered 25 Nov 2026 around the US close; intraday sources and closes can differ slightly. WSJ and FT pages are paywalled and were not directly read.</p>
+  <p id="links"></p>
+</div></footer>
+
+<script>
+{
+const pc=v=>(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(2)+'%';
+const cls=v=>v>0?'up':v<0?'dn':'flat';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const tiles=[['S&P 500','7,195.06',-0.08],['Nasdaq Comp.','≈23,610',-0.52],['Dow','50,365.85',0.69],['STOXX 600','626.03',-1.06],['Nikkei 225','57,011.62',-2.78],['Kospi','4,697.51',-6.2],['US 10Y','4.85%',null,'−8 bp'],['Brent','$89.58',-1.99],['Gold','≈$3,470',-2.24],['Dollar index','103.85',null,'near 19-mo high']];
+document.getElementById('tiles').innerHTML=tiles.map(([k,v,c,t])=>`<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="c ${c==null?(t.startsWith('−')?'up':'flat'):cls(c)}">${c==null?t:pc(c)}</div></div>`).join('');
+
+const eq=[['Asia-Pacific'],['Kospi','Korea',-6.2,'4,697.51'],['Taiex','Taiwan',-4.8,'≈38,142'],['Nikkei 225','Japan',-2.78,'57,011.62'],['Shanghai Comp.','China',-2.03,'3,476.47'],['Hang Seng','Hong Kong',-1.14,'21,966.01'],['ASX 200','Australia',-0.4,'8,692.40'],['Sensex','India',2.4,'6-month high'],
+['Europe'],['FTSE MIB','Italy',-1.81,'47,249.15'],['DAX','Germany',-1.26,'24,702.13'],['STOXX 600','Europe',-1.06,'626.03'],['CAC 40','France',-0.75,'7,980.57'],['FTSE 100','UK',-0.32,'10,433.66'],
+['United States'],['Nasdaq Comp.','US',-0.52,'≈23,610'],['S&P 500','US',-0.08,'7,195.06'],['Dow Jones','US',0.69,'50,365.85']];
+const M=6.5;
+document.getElementById('track').innerHTML=eq.map(r=>{if(r.length===1)return`<div class="reg">${r[0]}</div>`;const[n,c,v,l]=r;const w=Math.min(Math.abs(v),M)/M*50;const left=v<0?50-w:50;
+return`<div class="row" title="${n} (${c}) · ${l} · ${pc(v)}"><div class="nm">${n}<small>${l}</small></div><div class="bar"><i style="left:${left}%;width:${w}%;background:var(--${v<0?'dn':'up'});transform-origin:${v<0?'right':'left'}"></i></div><div class="pc ${cls(v)}">${pc(v)}</div></div>`}).join('');
+
+const bonds=[['US 2-year','4.64%','−4.6 bp'],['US 10-year','4.85%','−8.4 bp'],['US 30-year','≈5.27%','−2 bp'],['German 10-year Bund','3.22%','−4 bp'],['Japan 10-year JGB','≈2.77%','mid-Nov level'],['US 2s10s curve','+21 bp','−3 bp']];
+document.getElementById('bonds').innerHTML=bonds.map(b=>`<tr><td>${b[0]}</td><td class="n">${b[1]}</td><td class="n ${b[2].startsWith('−')?'up':'flat'}">${b[2]}</td></tr>`).join('');
+const cmd=[['WTI crude','$80.71','−1.64%','dn'],['Gold (spot)','≈$3,470','−2.2%, bear market','dn'],['Silver','$39.64','+0.6% intraday','up'],['Copper (LME 3M, 24 Nov)','$11,858/t','−5.05%','dn'],['Bitcoin','≈$59,300','−0.6%','dn'],['EUR/USD','1.0948','euro softer','flat'],['USD/JPY','≈159.3','intervention watch','flat']];
+document.getElementById('cmd').innerHTML=cmd.map(b=>`<tr><td>${b[0]}</td><td class="n">${b[1]}</td><td class="n ${b[3]}">${b[2]}</td></tr>`).join('');
+
+function line(id,pts,fmt,color,yPad){
+  const box=document.getElementById(id),s=box.querySelector('svg'),tip=box.querySelector('.tip');
+  const draw=()=>{const W=s.clientWidth,H=s.clientHeight,L=44,R=14,T=14,B=30,small=W<520;
+    const ys=pts.map(p=>p[1]),lo=Math.min(...ys)-yPad,hi=Math.max(...ys)+yPad;
+    const X=i=>L+i*(W-L-R)/(pts.length-1),Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
+    let g='';for(let k=0;k<=4;k++){const v=lo+k*(hi-lo)/4;g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#24305e"/><text x="${L-6}" y="${Y(v)+4}" fill="#a6aed0" font-size="12" text-anchor="end">${fmt(v)}</text>`}
+    const step=small?2:1;pts.forEach((p,i)=>{if(i%step===0||i===pts.length-1)g+=`<text x="${X(i)}" y="${H-8}" fill="#a6aed0" font-size="12" text-anchor="middle">${p[0]}</text>`});
+    const d=pts.map((p,i)=>(i?'L':'M')+X(i)+' '+Y(p[1])).join('');
+    const last=pts.length-1;
+    g+=`<path d="${d}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>`+pts.map((p,i)=>`<circle cx="${X(i)}" cy="${Y(p[1])}" r="${i===last?6:4}" fill="${color}" stroke="#111c44" stroke-width="2"/>`).join('');
+    g+=`<line id="${id}-x" y1="${T}" y2="${H-B}" stroke="#f7e463" stroke-width="1" opacity="0"/><rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent" id="${id}-hit"/>`;
+    s.innerHTML=g;
+    const hit=s.querySelector('#'+id+'-hit'),xl=s.querySelector('#'+id+'-x');
+    hit.onmousemove=e=>{const r=s.getBoundingClientRect(),i=Math.max(0,Math.min(last,Math.round((e.clientX-r.left-L)/((W-L-R)/last))));
+      xl.setAttribute('x1',X(i));xl.setAttribute('x2',X(i));xl.setAttribute('opacity',1);tip.textContent=pts[i][0]+': '+fmt(pts[i][1]);tip.style.opacity=1;
+      tip.style.left=Math.min(X(i)+10,W-120)+'px';tip.style.top=(Y(pts[i][1])-34)+'px'};
+    hit.onmouseleave=()=>{tip.style.opacity=0;xl.setAttribute('opacity',0)}};
+  const ro=new ResizeObserver(draw);ro.observe(s);
+}
+line('ust',[['26 Oct',4.99],['28 Oct',5.05],['30 Oct',4.93],['2 Nov',4.89],['6 Nov',4.86],['10 Nov',4.98],['13 Nov',5.16],['19 Nov',5.05],['25 Nov',4.85]],v=>v.toFixed(2)+'%','#4fc1c6',0.05);
+line('brent',[['17 Nov',93.14],['18 Nov',91.95],['19 Nov',91.98],['20 Nov',92.57],['23 Nov',89.37],['24 Nov',91.40],['25 Nov',89.58]],v=>'$'+v.toFixed(1),'#f7e463',1);
+
+const eps=[['US S&P 500',32.9],['· Other 493',32.6],['· Magnificent 7',27.0],['Europe STOXX 600',25],['· ex-energy',9.5],['Japan TOPIX (Apr–Jun net)',67.7]];
+document.getElementById('eps').innerHTML=eps.map(([n,v])=>`<div class="hb" title="${n}: +${v}%"><div>${n}</div><div class="t"><i style="width:${v/70*100}%;background:${n.startsWith('·')?'#4fc1c6aa':'var(--up)'}"></i></div><div class="n" style="text-align:right;font-weight:600">+${v}%</div></div>`).join('')+
+`<p class="note">Next: LSEG sees Europe’s Q4 earnings growth near 40%, outpacing the US for the first time since 2023; FactSet’s CY2026 S&amp;P 500 view was about 33% in early October.</p>`;
+
+{const box=document.getElementById('infl'),s=box.querySelector('svg'),tip=box.querySelector('.tip');
+const d=[['US',3.8,4.00],['Euro area',4.0,2.50],['UK',3.6,4.00],['Japan',2.3,1.25],['China',0.7,null]];
+const draw=()=>{const W=s.clientWidth,H=s.clientHeight,L=34,R=8,T=12,B=28,mx=5;
+  const Y=v=>T+(mx-v)/mx*(H-T-B),gw=(W-L-R)/d.length,bw=Math.min(34,gw*0.32);let g='';
+  for(let k=0;k<=5;k++)g+=`<line x1="${L}" x2="${W-R}" y1="${Y(k)}" y2="${Y(k)}" stroke="#24305e"/><text x="${L-6}" y="${Y(k)+4}" fill="#a6aed0" font-size="12" text-anchor="end">${k}%</text>`;
+  g+=`<line x1="${L}" x2="${W-R}" y1="${Y(2)}" y2="${Y(2)}" stroke="#f7e463" stroke-dasharray="4 4"/><text x="${W-R}" y="${Y(2)-5}" fill="#f7e463" font-size="12" text-anchor="end">2% target</text>`;
+  d.forEach(([n,i,p],k)=>{const cx=L+gw*k+gw/2;
+    const bar=(x,v,c,lab)=>`<path d="M${x} ${Y(0)}V${Y(v)+4}q0 -4 4 -4h${bw-8}q4 0 4 4V${Y(0)}Z" fill="${c}" data-t="${n} · ${lab}: ${v.toFixed(2)}%"/>`;
+    g+=bar(cx-bw-1,i,'#e8452c','inflation');if(p!=null)g+=bar(cx+1,p,'#6f82f0','policy rate');
+    g+=`<text x="${cx}" y="${H-8}" fill="#a6aed0" font-size="12" text-anchor="middle">${n}</text>`});
+  s.innerHTML=g;s.querySelectorAll('path').forEach(el=>{el.onmouseenter=e=>{tip.textContent=el.dataset.t;tip.style.opacity=1;const b=el.getBBox();tip.style.left=Math.min(b.x,W-200)+'px';tip.style.top=(b.y-32)+'px'};el.onmouseleave=()=>tip.style.opacity=0})};
+const ro2=new ResizeObserver(draw);ro2.observe(s);}
+
+const pmi=[['Germany',55.0],['US',54.6],['UK',52.3],['Euro area',51.7],['Japan',51.5],['France',46.2],['China mfg (NBS, Oct)',49.3]];
+document.getElementById('pmi').innerHTML=pmi.map(([n,v])=>`<div class="hb" title="${n}: ${v}"><div>${n}</div><div class="t"><i style="width:${(v-40)/20*100}%;background:var(--${v>=50?'up':'dn'})"></i><b style="left:50%"></b></div><div style="text-align:right;font-weight:600">${v.toFixed(1)}</div></div>`).join('')+'<p class="note">Bars start at 40; yellow tick = 50. US Nov composite down from 55.9; UK from 52.9; euro area unchanged.</p>';
+
+const macro=[['United States','Q3 +4.3% saar (2nd est., from 3.4%)','PCE 3.8%, core 3.3% (Oct, 2-yr high); CPI +0.4% m/m','Fed 3.75–4.00%; Dec hike ~97% priced'],
+['Euro area','Q3 +0.4% q/q, +1.3% y/y; France −0.1%','HICP 4.0% (Oct, 3-yr high); core 2.6%','ECB deposit 2.50%, held 29 Oct'],
+['United Kingdom','Flash PMI implies ~0.6% q/q in Q4','CPI 3.6%, core 2.8% (Oct)','BoE hiked to 4.00% on 5 Nov (8–1)'],
+['Japan','Q3 −0.1% annualised','CPI 2.3% (Oct); PPI +7.1%','BoJ 1.25%; Dec hike ~76% priced'],
+['China','Q3 +4.5% y/y; Oct IP +4.8%, retail +0.4%','CPI 0.7%, core 0.8% (Oct)','FAI −8.1% YTD; property inv. −21.6%'],
+['Australia','—','CPI 4.9% (raises RBA hike odds)','—']];
+document.getElementById('macro').innerHTML=macro.map(r=>`<tr>${r.map((c,i)=>`<td>${i?esc(c):'<b>'+esc(c)+'</b>'}</td>`).join('')}</tr>`).join('');
+
+const news=[['AI sell-off, then a rescue','Nasdaq −4.6%, S&P 500 −3.2% and Dow −1,100 pts at the lows before closing mixed. Nvidia −4.7%; the Nasdaq-100 briefly sat 20% below its record. S&P 500 on track for its worst November since 2008.','dn'],
+['Hot PCE seals the Fed hike','Core PCE 3.3% y/y, above the 3.2% consensus; headline 3.8%. Q3 GDP revised up to 4.3%. Waller has floated a 50 bp move; 10-year yields still fell 8 bp on haven demand.','warm'],
+['New US tariffs on 14 partners','USTR proposed 20–40% Section 301 duties on China, the EU, Japan, India, Vietnam and others after an eight-month excess-capacity probe; China faces the highest rates. Officials say they may not bite for months.','dn'],
+['Nvidia governance saga','Jensen Huang resigned on 12 Nov and was reinstated on 23 Nov after the board took input from the US government. He testifies to House committees on chip smuggling and export controls on 1–2 Dec.','warm'],
+['Asia’s chip markets hit hardest','Kospi −6.2% with a sidecar halt; Samsung −9.9%, SK Hynix −11.1%, SoftBank −14.8%, Kioxia −14.2%, MediaTek −10%. Shanghai at a one-year-plus low. India’s Sensex bucked it, +2.4%.','dn'],
+['Europe gives up early gains','STOXX 600 −1.06% after trading higher at midday: ASM International −7.8%, Infineon −6.5%, ASML −5.8%. Autos held up — Volkswagen +4.6% on EU hybrid rules.','dn'],
+['Gold in a bear market, dollar firm','Gold fell about 2% toward a one-year low, 34% below January’s record, as hike bets lifted the dollar index to a 19-month high. Copper dropped 5% on Tuesday.','dn'],
+['Earnings strength persists','S&P 500 Q3 earnings +32.9% (FactSet), third straight quarter above 25%. STOXX 600 Q3 heading for +25%, the best in four years, on energy and banks.','up']];
+document.getElementById('news').innerHTML=news.map(([h,p,c])=>`<div class="item" style="--c:var(--${c})"><h3>${h}</h3><p>${p}</p></div>`).join('');
+
+const geo=[['Iran war / Strait of Hormuz','Shipping largely blocked since 28 Feb. Iran says the Strait stays shut until its seven conditions are met; tankers hit mines on 23–24 Nov; Qatar-mediated talks stalled. Brent is down ~19% in a month but ~50% higher than a year ago.','dn'],
+['Trump–Xi–Putin trilateral','The 18–19 Nov Shenzhen summit produced a “peace declaration” on UN reform, fuel supplies and nuclear risk — with no mention of Ukraine or Iran.','warm'],
+['US politics after the midterms','Democrats took both the House and Senate on 3 Nov, bringing divided government and more oversight; markets rallied on the result.','warm'],
+['US–China tech front','Export controls, the Nvidia/China smuggling probes, an ASML export-control dispute in Congress and the new Section 301 tariffs keep semiconductors at the centre of geopolitical risk.','dn']];
+document.getElementById('geo').innerHTML=geo.map(([h,p,c])=>`<div class="item" style="--c:var(--${c})"><h3>${h}</h3><p>${p}</p></div>`).join('');
+
+const cal=[['Thu 26 Nov','US stock and bond markets closed (Thanksgiving)'],['Fri 27 Nov','US stocks close 1 pm ET, bonds 2 pm ET'],['1–2 Dec','Jensen Huang and Nvidia counsel before House committees'],['8–9 Dec','FOMC — decision and new projections on 9 Dec'],['16 Dec','UK CPI (November)'],['18 Dec','Bank of Japan decision'],['23 Dec','US Q3 GDP, third estimate']];
+document.getElementById('cal').innerHTML=cal.map(([d,t])=>`<li><b>${d}</b>${t}</li>`).join('');
+
+const links=[['Reuters via MarketScreener: US close','https://www.marketscreener.com/news/nasdaq-s-p-500-ease-but-off-lows-of-the-day-as-investors-seek-bargains-ce7851d8da8ef121'],['Yahoo Finance live blog','https://finance.yahoo.com/markets/live/stock-market-today-wednesday-november-25-dow-sp-500-nasdaq-pce-inflation-data-091428237.html'],['CNBC: PCE October','https://www.cnbc.com/2026/11/25/pce-inflation-report-october-2026.html'],['FactSet Earnings Insight','https://www.factset.com/earningsinsight'],['Reuters/US News: USTR tariffs','https://www.investing.com/news/world-news/us-proposes-new-tariffs-on-14-trading-partners-to-fight-excess-factory-capacity-5050714'],['Al Jazeera: Asia sell-off','https://www.aljazeera.com/news/2026/11/25/asias-stock-markets-dive-as-doubts-to-swirl-over-ai-boom'],['S&P Global flash PMIs','https://www.pmi.spglobal.com/'],['Eurostat HICP October','https://ec.europa.eu/eurostat/web/products-euro-indicators/w/2-18112026-ap'],['Bank of England November MPS','https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/november-2026'],['Nvidia 8-K: Huang reinstated','https://www.sec.gov/Archives/edgar/data/0001045810/000104581026000090/nov23pressrelease.htm']];
+document.getElementById('links').innerHTML=links.map(([t,u])=>`<a href="${u}">${t}</a>`).join(' · ');
+}
+</script>
+</body>
+</html>
